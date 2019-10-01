@@ -1,7 +1,10 @@
 import math
+import numpy as np
+import scipy.misc as smp
+
 
 def getPosition(x, y):
-    return (x + y*(border.y+1))
+    return ((x-1)*(border.x) + y)
 
 class Point:
     def __init__(self, xCoordinate, yCoordinate):
@@ -16,7 +19,7 @@ class Polygon:
 
 
 # Global variable
-border = Point          # Limited of rectangle
+border = Point         # Limited of rectangle
 
 sourcePoint = Point     # Source coordinate 
 destPoint = Point       # Dest coordinate
@@ -25,32 +28,33 @@ numPolygons = 0         # Number of polygons in rectangle
 polygonList = []        # List of polygons coordinate
 
 canMoveTo = []          # 
-graph = [[]]*10000
+graph = []
 
 
 # Read data from file and parse to variable
 def initData():
+    inputArr = []
     with open("input.txt", "r") as inputFile:
-        inputArr = []
         for line in inputFile:
             inputArr.append([int(x) for x in line.split()])
 
-    border.x = inputArr[0][0] 
-    border.y = inputArr[0][1]
-    
     sourcePoint.x = inputArr[1][0]
     sourcePoint.y = inputArr[1][1]
     destPoint.x = inputArr[1][2]
     destPoint.y = inputArr[1][3]
 
     numPolygons = [int(inputArr[2][0])]
-
+    
     for polyNum in numPolygons:
         pointTemp = []
         for edgeNum in range(0, inputArr[polyNum+2][0]):
             pointTemp.append(Point(inputArr[polyNum+2][edgeNum*2+1], inputArr[polyNum+2][edgeNum*2+2]))  
         
         polygonList.append(Polygon(inputArr[polyNum+2][0], pointTemp))
+
+    border.x = inputArr[0][0] 
+    border.y = inputArr[0][1]
+
 
 # Check if a point is inside a polygon
 def onSegment(a, b, c): 
@@ -102,57 +106,38 @@ def isInside(polygon, nEdge, checkPoint):
 def getDistance(p, q):
     return abs(p.x-q.x) + abs(p.y-q.y)
 
+mark = []
+path = []*100
+graph.append((0, 0))
+for i in range(1, 100):
+    mark.append(0)
+
+
+
 # Main Program
 initData()
-print(border.x)
 print(border.y)
-
-
-for xAxis in range(1, border.x):
-    for yAxis in range(1, border.y):
-        currentPixel = getPosition(xAxis, yAxis)
-       # print(currentPixel)
+temp = 0
+for xAxis in range(1, border.x+1):
+    for yAxis in range(1, border.y+1):
         up = (getPosition(xAxis+1, yAxis), 1)
         down = (getPosition(xAxis-1, yAxis), 1)
         left = (getPosition(xAxis, yAxis-1), 1)
         right = (getPosition(xAxis, yAxis+1), 1)
-        graph[currentPixel].append([up, down, left, right])
+        graph.append([up, down, left, right])
 
 
-#     for j in range(1, border.y):
-#         for u in range(1, border.x):
-#             for v in range(1, border.y): 
-#                 pointA = Point(i, j)
-#                 pointB = Point(u, v)
-#                 for poly in range(0, len(polygonList)):
-#                     for edge in range(0, polygonList[poly].numOfEdge-1):
-#                         pointC = Point(0, 0)
-#                         pointD = Point(0, 0)
-#                         pointC = polygonList[poly].pointList[edge]
-#                         if (edge == (polygonList[poly].numOfEdge)): 
-#                             pointD = polygonList[poly].pointList[0]
-#                         else: 
-#                             pointD = polygonList[poly].pointList[edge+1]
-
-#                         if (doIntersect(pointA, pointB, pointC, pointD)):
-#                             graphDistance[getPosition(i, j)][getPosition(u, v)] = -1
-#                         else: 
-#                            graphDistance[getPosition(i, j)][getPosition(u, v)] = getDistance(pointA, pointB)
-
-
-'''
-for i in range(1, (border.x+1)*(border.y+1)):
-    canMoveTo.append(True)
-
-for xCoordinate in range(1, border.x+1):
-    for yCoordinate in range(1, border.y+1):
-        tempPoint = Point(xCoordinate, yCoordinate)
-        for poly in range(1, len(polygonList)):
-            if (isInside(polygonList[poly], polygonList[poly].numOfEdge, tempPoint)):
-                canMoveTo[tempPoint.position] = False
-        
-
-for i in (1, border.x):
-    for j in (1, border.y):
-        print(canMoveTo[getPosition(i, j)])
-'''
+def dfsPath(graph, start, goal, path):
+    path.append(start)
+    if (start == goal):
+        return
+    
+    for u in range(0, 3):
+        v = graph[start][u][0]
+        if (mark[v] == 0):
+            mark[v] = 1
+            dfsPath(graph, v, goal, path)
+mark[6] = 1
+print(graph[6][1][0])
+dfsPath(graph, 1, 2, path)
+print(path)
