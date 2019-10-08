@@ -15,13 +15,13 @@ f.close()
 # Mid là tập các điểm phải đi qua, mid[0] là start, mid[-1] là goal
 # Chỉ có điểm đầu và điểm cuối là giữ nguyên
 # Các điểm ở giữa phải sắp xếp để được đường đi ngắn nhất
-mid = [[1, 1], [17, 10], [5, 1], [8, 8], [3, 1], [21, 17]]
+mid = [[2, 2], [3, 3], [19, 16]]
 
 # Đường đi ngắn nhất giữa mọi cặp đỉnh trong tập mid
 # Ví dụ: shortest[u][v] là đường đi ngắn nhất giữa mid[u] và mid[v]
 shortest = []
-for i in range(len(mid) + 2):
-    shortest += [[None] * (len(mid) + 2)]
+for i in range(len(mid)):
+    shortest += [[None] * (len(mid))]
 
 # Giải thuật di truyền
 # Mỗi cá thể là một lộ trình, có thứ tự và không lặp lại của các đỉnh
@@ -78,18 +78,38 @@ def genetic(mat, mid):
                 shortest[mid.index(u)][mid.index(v)] = shortest[mid.index(v)][mid.index(u)] = dv
             if all(visited):
                 break
+
             if mat[v[0] - 1][v[1]] == '.' and distance[v[0] - 1][v[1]] is None:
                 distance[v[0] - 1][v[1]] = dv + 1
                 queue += [[dv + 1, [v[0] - 1, v[1]]]]
+
             if mat[v[0] + 1][v[1]] == '.' and distance[v[0] + 1][v[1]] is None:
                 distance[v[0] + 1][v[1]] = dv + 1
                 queue += [[dv + 1, [v[0] + 1, v[1]]]]
+
             if mat[v[0]][v[1] - 1] == '.' and distance[v[0]][v[1] - 1] is None:
                 distance[v[0]][v[1] - 1] = dv + 1
                 queue += [[dv + 1, [v[0], v[1] - 1]]]
+
             if mat[v[0]][v[1] + 1] == '.' and distance[v[0]][v[1] + 1] is None:
                 distance[v[0]][v[1] + 1] = dv + 1
                 queue += [[dv + 1, [v[0], v[1] + 1]]]
+
+            if mat[v[0] - 1][v[1] - 1] == '.' and distance[v[0] - 1][v[1] - 1] is None and (mat[v[0] - 1][v[1]] == '.' or mat[v[0]][v[1] - 1] == '.'):
+                distance[v[0] - 1][v[1] - 1] = dv + 1.5
+                queue += [[dv + 1.5, [v[0] - 1, v[1] - 1]]]
+
+            if mat[v[0] - 1][v[1] + 1] == '.' and distance[v[0] - 1][v[1] + 1] is None and (mat[v[0] - 1][v[1]] == '.' or mat[v[0]][v[1] + 1] == '.'):
+                distance[v[0] - 1][v[1] + 1] = dv + 1.5
+                queue += [[dv + 1.5, [v[0] - 1, v[1] + 1]]]
+
+            if mat[v[0] + 1][v[1] + 1] == '.' and distance[v[0] + 1][v[1] + 1] is None and (mat[v[0] + 1][v[1]] == '.' or mat[v[0]][v[1] + 1] == '.'):
+                distance[v[0] + 1][v[1] + 1] = dv + 1.5
+                queue += [[dv + 1.5, [v[0] + 1, v[1] + 1]]]
+
+            if mat[v[0] + 1][v[1] - 1] == '.' and distance[v[0] + 1][v[1] - 1] is None and (mat[v[0] + 1][v[1]] == '.' or mat[v[0]][v[1] - 1] == '.'):
+                distance[v[0] + 1][v[1] - 1] = dv + 1.5
+                queue += [[dv + 1.5, [v[0] + 1, v[1] - 1]]]
     
     # Tạo quần thể 600 cá thể
     population = []
@@ -112,6 +132,7 @@ def genetic(mat, mid):
     # In ra 50 cá thể thích nghi tốt nhất
     population.sort(key = lambda x: x[0])
     for x, y in population[:50]:
-        print('Path: {}, distance: {}'.format(y, x))
+        path = [0] + y + [len(mid) - 1]
+        print('Path: {}, distance: {}'.format(path, x))
 
 genetic(mat, mid)
