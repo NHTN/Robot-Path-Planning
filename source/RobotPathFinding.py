@@ -13,16 +13,29 @@ polys = []              # Danh sách toạ độ các đa giác
 polyList = [] 
 canMoveTo = []
 trace = []
+tempMid = []
+mid = []
 #-----------------------------------------------------------------------------------------------------------------------------------------#
 
 # Đọc dữ liệu từ file input
 f = open('input.txt')
 borderLimit[0], borderLimit[1] = eval(f.readline())
-start[0], start[1], goal[0], goal[1] = eval(f.readline())
+tempMid = eval(f.readline())
 polyCount = eval(f.readline())
+temp = 0
 for line in f:
+    temp += 1
     polys += [eval(line)]
+
 f.close()
+
+start[0], start[1] = tempMid[0], tempMid[1]
+goal[0], goal[1] = tempMid[2], tempMid[3]
+
+for i in range(0, int(len(tempMid)/2)):
+    mid += [(tempMid[i*2], tempMid[i*2+1])]
+
+print(mid)
 
 # Khởi tạo data
 def initData(polyCount, polys, polyList, borderLimit, canMoveTo, trace):
@@ -97,6 +110,8 @@ def UCS(mat, start, goal, trace):
 
         for nextPosition in [(1, 0), (0, 1), (0, -1), (-1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]:
             nextMove = (u[0]+nextPosition[0], u[1]+nextPosition[1])
+            if (canMoveNextStep(nextPosition, nextMove, mat) == False):
+                continue
             if (mat[nextMove[0]][nextMove[1]] == 1 and distance[nextMove[0]][nextMove[1]] == 0.0):
                 weight = 1.0
                 if (nextPosition in [(-1, -1), (-1, 1), (1, -1), (1, 1)]):
@@ -139,6 +154,8 @@ def AStar(mat, start, goal, trace):
         # Thì đưa vào queue, đánh dấu đã đi vào
         for nextPosition in [(1, 0), (0, 1), (0, -1), (-1, 0), (-1, -1), (-1, 1), (1, -1), (1, 1)]:
             nextMove = (u[0]+nextPosition[0], u[1]+nextPosition[1])
+            if (canMoveNextStep(nextPosition, nextMove, mat) == False):
+                continue
             if (canMoveTo[nextMove[0]][nextMove[1]] == 1 and distance[nextMove[0]][nextMove[1]] == 0.0):
                 weight = 1.0
                 if (nextPosition in [(-1, -1), (-1, 1), (1, -1), (1, 1)]):
@@ -150,13 +167,12 @@ def AStar(mat, start, goal, trace):
     return distance[goal[0]][goal[1]]
 
 # ------------------------------------------------------------------------------
-mid = [[2, 2], [6, 10], [19, 16]]
 
 # Đường đi ngắn nhất giữa mọi cặp đỉnh trong tập mid
 # Ví dụ: shortest[u][v] là đường đi ngắn nhất giữa mid[u] và mid[v]
 shortest = []
 for i in range(len(mid)):
-    shortest += [[None] * (len(mid))]
+    shortest += [[0] * (len(mid))]
 
 # Giải thuật di truyền
 # Mỗi cá thể là một lộ trình, có thứ tự và không lặp lại của các đỉnh
@@ -189,7 +205,7 @@ def genetic(mat, mid):
             total =  total + shortest[moreA[i]][moreA[i + 1]]
         if all(visited):
             return total
-        return 99999999999
+        return 999999999999999999
 
     # BFS với queue đơn giản để tìm đường đi ngắn nhất giữa mọi cặp đỉnh
     # BFS + queue trên ma trận => đường đi hiển nhiên là ngắn nhất
@@ -203,7 +219,7 @@ def genetic(mat, mid):
                 visited += [False]
         distance = []
         for row in range(len(mat) + 1):
-            distance += [[None] * (len(mat[0]) + 1)]
+            distance += [[0] * (len(mat[0]) + 1)]
         distance[u[0]][u[1]] = 0
         queue = [[0, u]]
         while len(queue) != 0:
@@ -212,22 +228,18 @@ def genetic(mat, mid):
                 visited[mid.index(v)] = True
                 shortest[mid.index(u)][mid.index(v)] = shortest[mid.index(v)][mid.index(u)] = dv
             if all(visited):
-                break
+                break 
 
-            for nextPosition in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+            for nextPosition in [(-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (-1, 1), (1, -1), (1, 1)]:
                 nextMove = (v[0]+nextPosition[0], v[1]+nextPosition[1])
-                if (mat[nextMove[0]][nextMove[1]] == 1 and distance[nextMove[0]][nextMove[1]] is None):
-                    distance[nextMove[0]][nextMove[1]] = dv + 1
-                    queue += [[dv + 1, [nextMove[0], nextMove[1]]]]
-      
-              
-            for nextPosition in [(-1, -1), (-1, 1), (1, 1), (1, -1)]:
-                nextMove = (v[0]+nextPosition[0], v[1]+nextPosition[1])
-                if mat[nextMove[0]][nextMove[1]] == 1 and distance[nextMove[0]][nextMove[1]] is None:
-                    if (canMoveNextStep(nextPosition, nextMove, mat) == False):
-                        continue
-                    distance[nextMove[0]][nextMove[1]] = dv + 1.5
-                    queue += [[dv + 1.5, [nextMove[0], nextMove[1]]]]      
+                if (canMoveNextStep(nextPosition, nextMove, mat) == False):
+                    continue
+                if (mat[nextMove[0]][nextMove[1]] == 1 and distance[nextMove[0]][nextMove[1]] == 0.0):
+                    weight = 1.0
+                    if (nextPosition in [(-1, -1), (-1, 1), (1, -1), (1, 1)]):
+                        weight = 1.5
+                    distance[nextMove[0]][nextMove[1]] = dv + weight
+                    queue += [[dv + weight, [nextMove[0], nextMove[1]]]]  
 
 
     # Tạo quần thể 600 cá thể
@@ -252,10 +264,11 @@ def genetic(mat, mid):
     population.sort(key = lambda x: x[0])
     for x, y in population[:1]:
         path = [0] + y + [len(mid) - 1]
+        temp = 0
         for i in range(0, len(path)-1):
-            BFS(mat, mid[i], mid[i+1], trace)
+            temp += BFS(mat, mid[i], mid[i+1], trace)
             drawPath(mat, trace, mid[i], mid[i+1])
-        print('Path: {}, distance: {}'.format(path, x))
+        print('Path: {}, distance: {}'.format(path, temp))
 
 # ---------------------------------------------------------------- Mô phỏng đồ thị ------1----------------------------------------------#
 # Thuật toán BresenhamLine vẽ đường thẳng từ 2 điểm p0 - p1
@@ -278,7 +291,7 @@ def bresenhamLine(p0, p1):
     while True:
         canMoveTo[x0][y0] = 0
         if x0 == x1 and y0 == y1:
-            return
+            return 
         e2 = 2*err
         if e2 > -dy:
             err = err - dy
@@ -310,6 +323,7 @@ def drawBorder(canMoveTo):
 def drawPath(canMoveTo, trace, start, goal):
     canMoveTo[start[0]][start[1]] = 2
     canMoveTo[goal[0]][goal[1]] = 3
+    
     temp = trace[goal[0]][goal[1]]
     if (temp == (0, 0)):
         print("No Path")
@@ -326,10 +340,22 @@ def drawPath(canMoveTo, trace, start, goal):
 
 initData(polyCount, polys, polyList, borderLimit, canMoveTo, trace)
 drawBorder(canMoveTo)
-drawPolygon(polyCount, polyList)
-choice = int(input("Enter your algorithm: "))
+drawPolygon(polyCount, polyList) 
 
-while (choice > 0 and choice < 5):
+if (start[0] > borderLimit[0] or start[1] > borderLimit[1] or start[0] < 1 or start[1] < 1 or goal[0] > borderLimit[0] or goal[1] < borderLimit[1] or goal[0] < 1 or goal[1] < 1):
+    print("No Path")
+if (start == goal):
+    canMoveTo[start[0]][start[1]] = 2
+    canMoveTo[goal[0]][goal[1]] = 2
+    print(0.0)
+elif (canMoveTo[start[0]][start[1]] == 0 or canMoveTo[goal[0]][goal[1]] == 0):
+    canMoveTo[start[0]][start[1]] = 2
+    canMoveTo[goal[0]][goal[1]] = 2
+    print("No Path")
+else:
+    print("1. BFS \n2. UCS \n3. A star \n4. Genetic \n")
+    choice = int(input("Enter your selection:  "))
+
     if (choice == 1):
         print(BFS(canMoveTo, start, goal, trace))
         drawPath(canMoveTo, trace, start, goal)
@@ -340,17 +366,18 @@ while (choice > 0 and choice < 5):
         print(AStar(canMoveTo, start, goal, trace))
         drawPath(canMoveTo, trace, start, goal)
     elif (choice == 4):
-        genetic(canMoveTo, mid) 
+        checkPath = 0
+        for midPoint in mid:
+            if (canMoveTo[midPoint[0]][midPoint[1]] != 1):
+                print("No Path")
+                checkPath = 1
+                break
+        if (checkPath == 0):
+            genetic(canMoveTo, mid) 
 
-     # Biểu diễn đường đi trên đồ thị
-    plt.matshow(canMoveTo)
-    plt.show()
-    choice = int(input("Enter your algorithm: "))
-
-    for i in range(0, borderLimit[0]):
-        for j in range(0, borderLimit[1]): 
-            if (canMoveTo[i][j] == 8):
-                canMoveTo[i][j] = 1
+# Biểu diễn đường đi trên đồ thị
+plt.matshow(canMoveTo)
+plt.show()
 
     
 
